@@ -72,7 +72,6 @@ def generate_summary_document(json_path):
 
 def generate_links_document(json_path, titles):
     base = json_path.rsplit('.', 1)[0]
-    md_path = base + '_links.md'
 
     with open(json_path, encoding='utf-8') as f:
         data = json.load(f)
@@ -113,28 +112,39 @@ def generate_links_document(json_path, titles):
         label = f'{days}d' if days < 7 else f'{weeks}w'
         return f'{emoji} {label}'
 
-    lines = []
-    for title in titles:
-        jobs = [d for d in data if trim_title(d.get('Title', '')) == title]
-        if not jobs:
-            continue
-        lines.append(f'## {title}\n')
-        lines.append('| Title | Type | Old | Company Name | Link |')
-        lines.append('|-------|------|-----|--------------|------|')
-        for job in jobs:
-            t = job.get('Title', '').replace("|", "-")
-            job_type = extract_type(job.get('Primary Description', ''))
-            age = compute_age(job.get('Created At', ''), job.get('Scraped At', ''))
-            company = job.get('Company Name', '')
-            url = job.get('Detail URL', '')
-            lines.append(f'| {t} | {job_type} | {age} | {company} | [link]({url}) |')
-        lines.append('')
+    def build_lines(jobs_filter=None):
+        lines = []
+        for title in titles:
+            jobs = [d for d in data if trim_title(d.get('Title', '')) == title]
+            if jobs_filter:
+                jobs = [j for j in jobs if jobs_filter(j)]
+            if not jobs:
+                continue
+            lines.append(f'## {title}\n')
+            lines.append('| Title | Type | Old | Company Name | Link |')
+            lines.append('|-------|------|-----|--------------|------|')
+            for job in jobs:
+                t = job.get('Title', '').replace('|', '-')
+                job_type = extract_type(job.get('Primary Description', ''))
+                age = compute_age(job.get('Created At', ''), job.get('Scraped At', ''))
+                company = job.get('Company Name', '')
+                url = job.get('Detail URL', '')
+                lines.append(f'| {t} | {job_type} | {age} | {company} | [link]({url}) |')
+            lines.append('')
+        return lines
 
-    with open(md_path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines))
+    def write_doc(path, lines):
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+        print(f'Written: {path}')
 
-    print(f'Written: {md_path}')
+    md_path_all = base + '_links.md'
+    write_doc(md_path_all, build_lines())
+    print(f'Written: {md_path_all}')
 
+    md_path_non_remote = base + '_non-remote_links.md'
+    write_doc(md_path_non_remote, build_lines(jobs_filter=lambda j: 'remote' not in extract_type(j.get('Primary Description', '')).lower()))
+    print(f'Written: {md_path_non_remote}')
 
 if __name__ == '__main__':
     json_path = sys.argv[1]
