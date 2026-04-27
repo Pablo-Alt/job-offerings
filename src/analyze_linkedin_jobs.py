@@ -99,7 +99,19 @@ def generate_links_document(json_path, titles):
     def compute_age(created_at, scraped_at):
         delta = parse_dt(scraped_at) - parse_dt(created_at)
         days = delta.days
-        return f'{days // 7}w' if days >= 7 else f'{days}d'
+        weeks = days // 7
+        if days < 7:
+            emoji = '💚'  # very bright green heart
+        elif weeks <= 3:
+            emoji = '🟩'  # green square
+        elif weeks <= 8:
+            emoji = '🟡'  # yellow circle
+        elif weeks <= 16:
+            emoji = '🔶'  # orange diamond
+        else:
+            emoji = '🔺'  # red triangle
+        label = f'{days}d' if days < 7 else f'{weeks}w'
+        return f'{emoji} {label}'
 
     lines = []
     for title in titles:
