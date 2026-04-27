@@ -110,7 +110,7 @@ def generate_links_document(json_path, titles):
         lines.append('| Title | Type | Old | Company Name | Link |')
         lines.append('|-------|------|-----|--------------|------|')
         for job in jobs:
-            t = job.get('Title', '')
+            t = job.get('Title', '').replace("|", "-")
             job_type = extract_type(job.get('Primary Description', ''))
             age = compute_age(job.get('Created At', ''), job.get('Scraped At', ''))
             company = job.get('Company Name', '')
